@@ -1,0 +1,115 @@
+<!--
+  PATCH: Contact editor email row — Phase 1
+  Adds a "Historic" checkbox to each email address field.
+
+  HOW TO APPLY:
+  Find the email-row template/loop in the contact editor.
+  In CardBook this is typically in:
+    src/chrome/content/cardbookCards.xhtml
+    OR src/skin/tb/cardbookCards.html  (newer versions)
+
+  Add the <label> block at the end of each email-row.
+
+  Coordination repo: https://github.com/KonradLanz/historic-email-vcard-rfc
+-->
+
+<!-- ─── EMAIL ROW TEMPLATE (existing structure, simplified) ─────────────────
+     Your actual file will have more attributes — only add the label block.
+──────────────────────────────────────────────────────────────────────────── -->
+
+<!--
+<div class="email-row" data-index="{{index}}">
+
+  <!-- EXISTING: value input -->
+  <input type="text"
+         class="email-value"
+         value="{{email.value}}"
+         placeholder="email@example.com" />
+
+  <!-- EXISTING: type selector -->
+  <select class="email-type">
+    <option value="WORK">Work</option>
+    <option value="HOME">Home</option>
+    <option value="OTHER">Other</option>
+  </select>
+
+  <!-- ADD THIS BLOCK ──────────────────────────────────────────────────────── -->
+  <label class="historic-label"
+         title="This address is no longer active.
+                It stays linked to old mail but is hidden from autocomplete
+                when composing new messages.">
+    <input type="checkbox"
+           class="email-historic"
+           data-index="{{index}}"
+           {{#if email.historic}}checked{{/if}} />
+    <span class="historic-text">Historic</span>
+  </label>
+  <!-- END ADD ─────────────────────────────────────────────────────────────── -->
+
+</div>
+-->
+
+
+<!-- ─── CSS to add (inline or in cardbook.css) ──────────────────────────────
+     The label should be subtle — a muted checkbox, not a warning.
+     It becomes more prominent only when checked.
+────────────────────────────────────────────────────────────────────────── -->
+
+<!--
+<style>
+.historic-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 0.85em;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+}
+
+.historic-label:has(input:checked) {
+  color: #b85c00;          /* amber — signals caution, not error */
+}
+
+.email-historic {
+  accent-color: #b85c00;
+  cursor: pointer;
+}
+
+/* Visually distinguish a historic address in the contact view */
+.email-row:has(.email-historic:checked) .email-value {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+</style>
+-->
+
+
+<!-- ─── JS to add in the save/change handler ────────────────────────────────
+     Add this block inside the function that collects form values
+     before saving the contact.
+────────────────────────────────────────────────────────────────────────── -->
+
+<!--
+<script>
+// Phase 1: collect X-HISTORIC flag from each email row checkbox
+document.querySelectorAll(".email-historic").forEach((checkbox) => {
+  const index = parseInt(checkbox.dataset.index, 10);
+  const wasHistoric = contact.emails[index].historic;
+
+  contact.emails[index].historic = checkbox.checked;
+
+  // Record when the address was first flagged (ISO 8601 compact, UTC)
+  if (checkbox.checked && !wasHistoric) {
+    contact.emails[index].historicSince =
+      new Date().toISOString()          // 2025-05-15T16:32:00.000Z
+        .replace(/[-:]/g, "")           // 20250515T163200.000Z
+        .split(".")[0] + "Z";           // 20250515T163200Z
+  }
+
+  // If un-flagged, preserve historicSince for audit trail
+  // (do not clear it — the address WAS historic at some point)
+});
+</script>
+-->
